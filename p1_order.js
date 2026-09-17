@@ -41,7 +41,8 @@ sleep(10).then(() => console.log("F"));
 
 console.log("G");
 
-// prediction:
-// actual:
+// prediction: A D G E F C B
+// actual:     A D G C F E B
 // why I was wrong (one line per miss):
-//
+// C : 0ms 이므로 대기 하는 코드들중 가장 빠르게 출력
+// E : 10ms 대기 후 F 를 출력하고 다음 순서인 30ms 의 E를 출력
