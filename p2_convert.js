@@ -51,29 +51,45 @@ function stats(text) {
 // --- 콜백 버전 (주어진 것, 수정 금지) ---
 // a 를 읽고 → 그 콜백 안에서 b 를 읽고 → 그 콜백 안에서 c 를 읽는다.
 // "다음 파일은 앞 파일을 다 읽은 뒤에" 라는 순서를 지키려면 이렇게 안으로 들어갈 수밖에 없었다.
-function callbackVersion() {
-  fs.readFile(FILES[0], "utf8", (err, a) => {
-    if (err) return console.error("Failed:", err.message);
-    const sa = stats(a);
-    console.log(`${FILES[0]}: ${sa.lines} lines, ${sa.words} words`);
-    fs.readFile(FILES[1], "utf8", (err, b) => {
-      if (err) return console.error("Failed:", err.message);
-      const sb = stats(b);
-      console.log(`${FILES[1]}: ${sb.lines} lines, ${sb.words} words`);
-      fs.readFile(FILES[2], "utf8", (err, c) => {
-        if (err) return console.error("Failed:", err.message);
-        const sc = stats(c);
-        console.log(`${FILES[2]}: ${sc.lines} lines, ${sc.words} words`);
-        console.log(`total: ${sa.lines + sb.lines + sc.lines} lines`);
-      });
-    });
-  });
-}
+// function callbackVersion() {
+//   fs.readFile(FILES[0], "utf8", (err, a) => {
+//     if (err) return console.error("Failed:", err.message);
+//     const sa = stats(a);
+//     console.log(`${FILES[0]}: ${sa.lines} lines, ${sa.words} words`);
+//     fs.readFile(FILES[1], "utf8", (err, b) => {
+//       if (err) return console.error("Failed:", err.message);
+//       const sb = stats(b);
+//       console.log(`${FILES[1]}: ${sb.lines} lines, ${sb.words} words`);
+//       fs.readFile(FILES[2], "utf8", (err, c) => {
+//         if (err) return console.error("Failed:", err.message);
+//         const sc = stats(c);
+//         console.log(`${FILES[2]}: ${sc.lines} lines, ${sc.words} words`);
+//         console.log(`total: ${sa.lines + sb.lines + sc.lines} lines`);
+//       });
+//     });
+//   });
+// }
 
 // --- async/await 버전 (여기를 채운다) ---
 // 같은 순서(a → b → c), 같은 출력. 중첩 없이, 루프 하나와 try/catch 하나로.
 async function main() {
-  // TODO
+  let total = 0;
+
+  try {
+    for (const file of FILES) {
+      const text = await fsp.readFile(file, "utf8");
+      const s = stats(text);
+
+      console.log(`${file}: ${s.lines} lines, ${s.words} words`);
+
+      total += s.lines;
+    }
+
+    console.log(`total: ${total} lines`);
+  } catch (err) {
+    console.error("Failed:", err.message);
+    process.exit(1);
+  }
 }
 
 // 먼저 callbackVersion() 을 한 번 실행해서 기대 출력을 눈으로 본 다음, main() 으로 바꾼다.
