@@ -21,7 +21,7 @@
 //   자세한 것은 README P6.
 //
 // 커밋 메시지: p3: forecast cli  /  p6: cache and offline
-
+import chalk from "chalk";
 import {
   geocode,
   forecast,
@@ -43,18 +43,26 @@ function label(date) {
 
 function printForecast(place, fc) {
   console.log(
-    `${place.name}, ${place.country} (${place.latitude.toFixed(2)}, ${place.longitude.toFixed(2)})`
-  );
+  `${chalk.bold(place.name)}, ${place.country} (${place.latitude.toFixed(2)}, ${place.longitude.toFixed(2)})`
+);
 
   console.log(
     `Now: ${fc.now.temp.toFixed(1)}${fc.now.unit}, ${describe(fc.now.code)}`
   );
 
   for (const day of fc.days) {
-    console.log(
-      `${label(day.date)}  min ${day.min.toFixed(1)}  max ${day.max.toFixed(1)}  ${describe(day.code)}`
-    );
+  let maxTemp = day.max.toFixed(1);
+
+  if (day.max >= 30) {
+    maxTemp = chalk.red(maxTemp);
+  } else if (day.max < 10) {
+    maxTemp = chalk.blue(maxTemp);
   }
+
+  console.log(
+    `${label(day.date)}  min ${day.min.toFixed(1)}  max ${maxTemp}  ${describe(day.code)}`
+  );
+ }
 }
 
 try {
