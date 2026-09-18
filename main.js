@@ -22,38 +22,76 @@
 //
 // 커밋 메시지: p3: forecast cli  /  p6: cache and offline
 
-import { geocode, forecast } from "./p3_weather.js";
+import {
+  geocode,
+  forecast,
+  fetchForecastRaw,
+  parseForecast,
+} from "./p3_weather.js";
 import { describe } from "./wmo.js";
+import { readFile, writeFile } from "node:fs/promises";
 
 const args = process.argv.slice(2);
-const flags = args.filter((a) => a.startsWith("--"));          // ["--save"] 같은 것
-const name = args.find((a) => !a.startsWith("--")) ?? "Seoul"; // 플래그가 아닌 첫 인자
+const flags = args.filter((a) => a.startsWith("--"));
+const name = args.find((a) => !a.startsWith("--")) ?? "Seoul";
 
 const WEEKDAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-function label(date) {                       // "2026-09-17" → "Thu 09-17"
+
+function label(date) {
   return `${WEEKDAY[new Date(date).getUTCDay()]} ${date.slice(5)}`;
 }
 
-try {
-  const place = await geocode(name);
-  const fc = await forecast(place);
-
-  // TODO (P3): 세 부분 출력
-
-console.log(
-  `${place.name}, ${place.country} (${place.latitude.toFixed(2)}, ${place.longitude.toFixed(2)})`
-);
-console.log(
-  `Now: ${fc.now.temp.toFixed(1)}${fc.now.unit}, ${describe(fc.now.code)}`
-);
-for (const day of fc.days) {
+function printForecast(place, fc) {
   console.log(
-    `${label(day.date)}  min ${day.min.toFixed(1)}  max ${day.max.toFixed(1)}  ${describe(day.code)}`
+    `${place.name}, ${place.country} (${place.latitude.toFixed(2)}, ${place.longitude.toFixed(2)})`
   );
+
+  console.log(
+    `Now: ${fc.now.temp.toFixed(1)}${fc.now.unit}, ${describe(fc.now.code)}`
+  );
+
+  for (const day of fc.days) {
+    console.log(
+      `${label(day.date)}  min ${day.min.toFixed(1)}  max ${day.max.toFixed(1)}  ${describe(day.code)}`
+    );
+  }
 }
 
-  // TODO (P6): --save, --offline (README 참고)
+try {
+  const filename = `cache/${name.toLowerCase()}.json`;
+
+  if (flags.includes("--offline")) {
+    const text = await readFile(filename, "utf8");
+    const cached = JSON.parse(text);
+    const fc = parseForecast(cached.raw);
+
+    printForecast(cached.place, fc);
+  } else {
+    const place = await geocode(name);
+
+    let fc;
+
+    if (flags.includes("--save")) {
+      const raw = await fetchForecastRaw(place);
+      fc = parseForecast(raw);
+
+      await writeFile(
+        filename,
+        JSON.stringify({ place, raw }, null, 2),
+        "utf8"
+      );
+    } else {
+      fc = await forecast(place);
+    }
+
+    printForecast(place, fc);
+  }
 } catch (err) {
-  console.error("Error:", err.message);
+  if (flags.includes("--offline") && err.code === "ENOENT") {
+    console.error(`Error: no cache for ${name.toLowerCase()}`);
+  } else {
+    console.error("Error:", err.message);
+  }
+
   process.exit(1);
 }
